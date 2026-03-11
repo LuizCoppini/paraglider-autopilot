@@ -1,0 +1,8 @@
+FGFS_PATH = r"C:\Program Files\FlightGear 2024.1\bin\fgfs.exe"
+AIRCRAFT_PATH = r"C:\Users\coppi\OneDrive\Documents\FlightGear\Aircraft"
+AIRCRAFT = "Parachutist"
+AIRPORT = "KSFO"
+TELNET_PORT = 5500
+START_LAT = 37.619
+START_LON = -122.375
+START_ALT = 10000

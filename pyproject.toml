@@ -1,0 +1,16 @@
+[project]
+name = "paraglider-autopilot"
+version = "0.1.0"
+description = "Autonomous paraglider controller for FlightGear simulator"
+authors = [
+    {name = "LuizCoppini",email = "coppiniluizcoppini@gmail.com"}
+]
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "flightgear-python (>=2.0.3,<3.0.0)",
+    "numpy (>=2.4.3,<3.0.0)"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
