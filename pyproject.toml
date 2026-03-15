@@ -8,7 +8,8 @@ authors = [
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "flightgear-python (>=2.0.3,<3.0.0)",
-    "numpy (>=2.4.3,<3.0.0)"
+    "numpy (>=2.4.3,<3.0.0)",
+    "jsbsim (>=1.2.4,<2.0.0)"
 ]
 
 [build-system]

@@ -199,6 +199,47 @@ files = [
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
 [[package]]
+name = "jsbsim"
+version = "1.2.4"
+description = "An open source flight dynamics & control software library"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "jsbsim-1.2.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:4a207f7da5edc4c1bebc9a86b9922b85c733f87c7fd7d3b9b19424cbb38e1973"},
+    {file = "jsbsim-1.2.4-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:35e13579d66049f8384f8e9585e38a24b6fe7b4cdb6ee6434bdb1a57f76fb678"},
+    {file = "jsbsim-1.2.4-cp310-cp310-win_amd64.whl", hash = "sha256:33704a8617fc2a55dfd130ba8b2353c411b8af26429520d1dbaf28505e051a4f"},
+    {file = "jsbsim-1.2.4-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:0a0e77d31bd280bacac64f900b742916be68f44bb7e53f5a6a30258bc29531c0"},
+    {file = "jsbsim-1.2.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:948c0ff91a09e9a6529fdd6a7bc5bfe2ac6f7ead2580e8823894bb20b681c81d"},
+    {file = "jsbsim-1.2.4-cp311-cp311-win_amd64.whl", hash = "sha256:bb9f3cb3f7bda8703aa720887f245a9d0be8517935d6c9288b874fd683252078"},
+    {file = "jsbsim-1.2.4-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:e50a0f93b9750004d7e84b2528ea0a2480a2c1c66eea3b6169ca720beb102118"},
+    {file = "jsbsim-1.2.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:f41cc0820ae1ad38485b5d16cef9176b1910e905841fe1422f42c116f6433124"},
+    {file = "jsbsim-1.2.4-cp312-cp312-win_amd64.whl", hash = "sha256:aa0c90febf86dcbdb579def1f7aeb45af5f444eda48d6b15dc3d17645ccbd71d"},
+    {file = "jsbsim-1.2.4-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:4a52fbca6b2f1499736778fe8c1001cdc9484a4c24441cd92974cbe95b6dc394"},
+    {file = "jsbsim-1.2.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:cfcfb473ea827212ba979c8e38099ec3a183461861cc90fa0fd215a46d99f818"},
+    {file = "jsbsim-1.2.4-cp313-cp313-win_amd64.whl", hash = "sha256:36227c41dcf83ec3030073410e98c254a1649e74c586021580ead404fe3b0eba"},
+    {file = "jsbsim-1.2.4-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:94dc2f7cb5eeb2b7e3617bf999ec3f54b747123a380783f2ff04955d44f92649"},
+    {file = "jsbsim-1.2.4-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:a4509e23635f3fd636d85de34e402de5c03878879da8f1bc09a6478faba25a71"},
+    {file = "jsbsim-1.2.4-cp314-cp314-win_amd64.whl", hash = "sha256:000d461315160d8298555b18fb3a8db5b8a5de1655d6495ad08dd114e97536b1"},
+    {file = "jsbsim-1.2.4-cp314-cp314t-macosx_10_15_universal2.whl", hash = "sha256:0a3e665e92bcb60942223aef37423dddc953ee238f0645bb6b16a64b694dbb9e"},
+    {file = "jsbsim-1.2.4-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:276c20db27a3e0f462e0aa013fdc553e66aebff7318c9cde985cbd1dccd2a391"},
+    {file = "jsbsim-1.2.4-cp314-cp314t-win_amd64.whl", hash = "sha256:11fb7d0aafb6ac8715b51108dd938882cd08c727aff61b898bff12b7e248d11a"},
+    {file = "jsbsim-1.2.4-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:70009f55ce2346d1dbaee9fe592367cc720f36a004c8b3fc92a96c419e4bcff1"},
+    {file = "jsbsim-1.2.4-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:573c4870b316c97da715319627e8e3ff5c2e9df337119f523b651fa6821ce643"},
+    {file = "jsbsim-1.2.4-cp39-cp39-win_amd64.whl", hash = "sha256:9b37c2d32870911c7241c09dad74af7b631d81d600f84c3b5a66e71a95195d65"},
+    {file = "jsbsim-1.2.4-pp310-pypy310_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:6669b41f33ecddb51d07a4e306f4b82942f052695b2d8630a9de480e561c5982"},
+    {file = "jsbsim-1.2.4-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:c410aa45687dfd7fa1d1dd9eba1c16a906019ddede762c9cdd8d2935fb3f8d0a"},
+    {file = "jsbsim-1.2.4-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:763e2192b257accdc59841965242212056e79bd0c6820b629f7f9623e68bc9b5"},
+    {file = "jsbsim-1.2.4-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:6e78594a5863d6cce96cd3afd2a9b0039b11340c08d82ca391da54688a678a89"},
+    {file = "jsbsim-1.2.4-pp39-pypy39_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:d9ba02159f56e429f33d845c8553d373be868ceb4de5eb812241ffd13226c5af"},
+    {file = "jsbsim-1.2.4-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:7fc25d4e7f0de473e45afd0a3a79db6b680df08ed2924bebe19f6a519da9f382"},
+    {file = "jsbsim-1.2.4.tar.gz", hash = "sha256:5702f11f4360df02766d6ee0d24cff97f992168c486ef876ca70cae53ef06b62"},
+]
+
+[package.dependencies]
+numpy = ">=1.20"
+
+[[package]]
 name = "multiprocess"
 version = "0.70.19"
 description = "better multiprocessing and multithreading in Python"
@@ -352,4 +393,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "d87a8df2865f9745db89ce2732d53eac97624f2df227db1b488456514aed573d"
+content-hash = "70be6bd0cb02f6ff7b46839bdec321bf386051e274219375459ebcab875c865c"
