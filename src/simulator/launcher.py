@@ -15,7 +15,7 @@ class FlightGearLauncher:
 
             "--lat=37.618805",
             "--lon=-122.375416",
-            "--altitude=5000",
+            f"--altitude={settings.START_ALT}",
             "--heading=0",
             "--vc=0",
 
