@@ -4,11 +4,11 @@ from simulator.launcher import FlightGearLauncher
 from simulator.fdm_reader import start_reader
 from simulator.jsbsim_runner import run_simulation
 
-modo = 1
+modo = 2
 
 def main():
 
-    if modo ==1:
+    if modo ==2:
         run_simulation()
     else:
         fg = FlightGearLauncher()

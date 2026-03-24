@@ -3,7 +3,28 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\src\flight_records\flight_1773616305.044534.csv">
+        <entry key="\first_flight_debug.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\first_flight_debug2.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\flight_log.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\flight_log2.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -17,21 +38,7 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\src\flight_records\parachute_flight_1773621447.632731.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\src\flight_records\parachute_flight_1773699697.350154.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\src\flight_records\parachute_flight_1773699859.973015.csv">
+        <entry key="\src\flight_records\flight_2026-03-17_10-32-40.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -39,6 +46,48 @@
           </value>
         </entry>
         <entry key="\src\flight_records\parachute_flight_1773703639.265445.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\parachute_flight_1773754140.434109.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\parachute_flight_1774272488.94846.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\zigzag_ok_1774273836.124543.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\zigzag_test_1774273468.709518.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\zigzag_wind_1774274759.980922.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\zigzag_xml_test_1774276125.623769.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

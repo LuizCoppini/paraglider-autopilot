@@ -4,12 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="27b10699-8c2b-434f-9cf1-de44d9f6410c" name="Changes" comment="Add jbsim simulation and parachute control">
+    <list default="true" id="27b10699-8c2b-434f-9cf1-de44d9f6410c" name="Changes" comment="Adjuste de jsbsim simulation enviroment">
       <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/poetry.lock" beforeDir="false" afterPath="$PROJECT_DIR$/poetry.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/simulator/jsbsim_runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/simulator/jsbsim_runner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/simulator/launcher.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/simulator/launcher.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,7 +84,15 @@
       <option name="project" value="LOCAL" />
       <updated>1773616915487</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Adjuste de jsbsim simulation enviroment">
+      <option name="closed" value="true" />
+      <created>1773704681344</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1773704681344</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="UnknownFeatures">
@@ -92,6 +101,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Add flight_records folder without tracking CSV logs" />
     <MESSAGE value="Add jbsim simulation and parachute control" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add jbsim simulation and parachute control" />
+    <MESSAGE value="Adjuste de jsbsim simulation enviroment" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adjuste de jsbsim simulation enviroment" />
   </component>
 </project>

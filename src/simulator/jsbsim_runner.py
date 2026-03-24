@@ -3,144 +3,94 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-
 JSBSIM_ROOT = r"D:\workspace\Pycharm\paraglider-autopilot\jsbsim"
 AIRCRAFT_PATH = r"C:\Users\coppi\OneDrive\Documents\FlightGear\Aircraft"
 
 
-def run_simulation(
-        start_altitude_ft=12000,
-        parachute_open_altitude_ft=3000,
-        max_sim_time=2000
-):
-
-    # -------------------------------------------------
-    # INICIALIZA JSBSIM
-    # -------------------------------------------------
-
+def run_simulation(start_altitude_ft=8000, max_sim_time=1500):
     fdm = jsbsim.FGFDMExec(JSBSIM_ROOT)
     fdm.set_debug_level(0)
-
-    try:
-        fdm.create_property("controls/engines/engine/throttle")
-    except:
-        pass
-
-    fdm["controls/engines/engine/throttle"] = 0
-
     fdm.set_aircraft_path(AIRCRAFT_PATH)
 
     if not fdm.load_model("Parachutist"):
-        raise RuntimeError("Failed to load aircraft")
+        raise RuntimeError("Falha ao carregar o modelo")
 
-    # timestep igual FlightGear
     fdm.set_dt(1 / 120)
 
-    # -------------------------------------------------
-    # CONDIÇÕES INICIAIS
-    # -------------------------------------------------
+    # --- CONFIGURAÇÃO DO VENTO ---
+    fdm["atmosphere/wind-north-fps"] = 0.0
+    fdm["atmosphere/wind-east-fps"] = 25.0  # Vento lateral para deslocamento
 
+    # CONDIÇÕES INICIAIS
     fdm["ic/lat-gc-deg"] = -26.238
     fdm["ic/long-gc-deg"] = -48.883
     fdm["ic/h-sl-ft"] = start_altitude_ft
-    fdm["ic/vc-kts"] = 0
     fdm["ic/psi-true-deg"] = 0
 
-    # parachute começa fechado
-    fdm["systems/chute/chute-cmd-norm"] = 0
+    # Velocidades iniciais (U = frente, W = baixo)
+    # Importante para o modelo não nascer em "stall"
+    fdm["ic/u-fps"] = 30.0
+    fdm["ic/w-fps"] = 15.0
 
-    # inicializa
     fdm.run_ic()
 
-    parachute_open = False
+    # --- CONFIGURAÇÃO ESPECÍFICA DO XML ---
+    # 1. Definir o peso do skydiver (conforme Chute.xml)
+    fdm["inertia/pointmass-weight-lbs[0]"] = 211.3
 
-    # -------------------------------------------------
-    # CSV
-    # -------------------------------------------------
+    # 2. Ativar o paraquedas (chute-cmd-norm gera chute-reef-pos-norm no Chute.xml)
+    fdm["systems/chute/chute-cmd-norm"] = 1.0
+
+    # Estabilizar o velame
+    print("Estabilizando velame e skydiver...")
+    for _ in range(600):
+        fdm.run()
 
     folder = Path("flight_records")
     folder.mkdir(exist_ok=True)
-
-    filename = folder / f"parachute_flight_{datetime.now().timestamp()}.csv"
+    filename = folder / f"zigzag_xml_test_{datetime.now().timestamp()}.csv"
 
     with open(filename, "w", newline="") as f:
-
         writer = csv.writer(f)
-
-        writer.writerow([
-            "time",
-            "lat",
-            "lon",
-            "alt_ft",
-            "vertical_speed_fps",
-            "roll",
-            "pitch",
-            "heading",
-            "parachute_open"
-        ])
+        # Heading e Roll para checar a curva, Aileron para checar o comando
+        writer.writerow(["time", "lat", "lon", "alt_ft", "heading", "roll", "aileron", "elevator"])
 
         sim_time = 0
-
-        # -------------------------------------------------
-        # LOOP SIMULAÇÃO
-        # -------------------------------------------------
-
         while sim_time < max_sim_time:
+            # LÓGICA DE ZIGUE-ZAGUE USANDO AILERON (conforme Controls.xml)
+            # Alternamos o aileron entre -0.5 e 0.5 a cada 15 segundos
+            if (sim_time % 30) < 15:
+                aileron = -0.5  # Curva para esquerda
+                elevator = 0.2  # Leve frenagem para estabilidade
+            else:
+                aileron = 0.5  # Curva para direita
+                elevator = 0.2
 
-            if not fdm.run():
-                print("JSBSim stopped")
-                break
+            fdm["fcs/aileron-cmd-norm"] = aileron
+            fdm["fcs/elevator-cmd-norm"] = elevator
 
-            lat = fdm["position/lat-gc-deg"]
-            lon = fdm["position/long-gc-deg"]
+            if not fdm.run(): break
+
             alt = fdm["position/h-sl-ft"]
-
-            roll = fdm["attitude/phi-deg"]
-            pitch = fdm["attitude/theta-deg"]
-            heading = fdm["attitude/psi-deg"]
-
-            vertical_speed = fdm["velocities/h-dot-fps"]
-
-            # -------------------------------------------------
-            # ABRIR PARAQUEDAS (igual FlightGear telnet)
-            # -------------------------------------------------
-
-            if (not parachute_open) and alt <= parachute_open_altitude_ft:
-
-                fdm["systems/chute/chute-cmd-norm"] = 1
-
-                parachute_open = True
-                print(f"Parachute opened at {alt:.0f} ft")
-
             writer.writerow([
                 sim_time,
-                lat,
-                lon,
+                fdm["position/lat-gc-deg"],
+                fdm["position/long-gc-deg"],
                 alt,
-                vertical_speed,
-                roll,
-                pitch,
-                heading,
-                parachute_open
+                fdm["attitude/psi-deg"],
+                fdm["attitude/phi-deg"],
+                aileron,
+                elevator
             ])
 
-            # -------------------------------------------------
-            # TERMINAR SIMULAÇÃO
-            # -------------------------------------------------
-
             if alt <= 1:
-                print("Landed")
+                print("Pousou!")
                 break
 
             sim_time += fdm.get_delta_t()
 
-    print("Simulation finished")
-    print("Saved:", filename)
+    print(f"Simulação finalizada! Arquivo: {filename}")
 
 
 if __name__ == "__main__":
-
-    run_simulation(
-        start_altitude_ft=12000,
-        parachute_open_altitude_ft=3000
-    )
+    run_simulation()
