@@ -31,6 +31,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\flight_records\data_records_training_20260324_131713\flight_log.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\src\flight_records\flight_2026-03-16_19-50-48.csv">
           <value>
             <Attribute>
