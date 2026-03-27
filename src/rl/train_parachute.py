@@ -54,7 +54,7 @@ def main():
     # 4. Execução do Treino
     try:
         model.learn(
-            total_timesteps=1000000,
+            total_timesteps=2000000,
             callback=checkpoint_callback,
             progress_bar=True
         )

@@ -5,7 +5,8 @@ import jsbsim
 import math
 import csv
 import os
-from datetime import datetime  # Para gerar o timestamp das pastas
+import random
+from datetime import datetime
 
 # Definição de caminhos do sistema para o motor JSBSim
 JSBSIM_ROOT = r"D:\workspace\Pycharm\paraglider-autopilot\jsbsim"
@@ -25,21 +26,14 @@ class ParachuteEnv(gym.Env):
         self.episode = 0
 
         # --- NOVA LÓGICA DE ORGANIZAÇÃO DE ARQUIVOS ---
-        # Gera um timestamp único para esta sessão de treino (Ex: 20231027_153045)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # AJUSTE DE CAMINHO: Agora utilizando o caminho absoluto solicitado dentro da pasta src
         base_records_path = r"D:\workspace\Pycharm\paraglider-autopilot\src\flight_records"
         self.run_dir = os.path.join(base_records_path, f"data_records_training_{timestamp}")
 
-        # Cria as pastas necessárias (inclusive a flight_records dentro da src, se não existir)
         os.makedirs(self.run_dir, exist_ok=True)
-
-        # O arquivo principal de log agora reside dentro da pasta da sessão
         self.log_file = os.path.join(self.run_dir, "flight_log.csv")
 
-        # Ranking para salvar apenas os 10 melhores voos (menor distância final)
-        self.top_flights = []  # Lista de tuplas: (distancia, numero_episodio, dados_completos)
+        self.top_flights = []
         self.max_top_flights = 10
 
         # ESPAÇO DE AÇÃO: Comandos que a IA pode enviar
@@ -76,16 +70,30 @@ class ParachuteEnv(gym.Env):
         self.fdm.set_dt(1 / 120)
 
     def reset(self, seed=None, options=None):
-        """Reinicia o ambiente para um novo voo."""
+        """Reinicia o ambiente para um novo voo com localização aleatória."""
         super().reset(seed=seed)
         self.episode += 1
         self._create_sim()
 
+        # --- LÓGICA DE LOCALIZAÇÃO ALEATÓRIA (Raio de 5km) ---
+        angle = random.uniform(0, 2 * math.pi)
+        radius = random.uniform(0, 5000)
+
+        delta_lat = (radius * math.cos(angle)) / 111320.0
+        delta_lon = (radius * math.sin(angle)) / (111320.0 * math.cos(math.radians(self.target_lat)))
+
+        start_lat = self.target_lat + delta_lat
+        start_lon = self.target_lon + delta_lon
+
         # Condições iniciais
-        self.fdm["ic/lat-gc-deg"] = -26.288
-        self.fdm["ic/long-gc-deg"] = -48.884
+        self.fdm["ic/lat-gc-deg"] = start_lat
+        self.fdm["ic/long-gc-deg"] = start_lon
         self.fdm["ic/h-sl-ft"] = 9850
-        self.fdm["ic/psi-true-deg"] = 0
+        self.fdm["ic/psi-true-deg"] = random.uniform(0, 360)
+
+        # --- CONFIGURAÇÃO DE VENTO PADRÃO LEVE ---
+        self.fdm["atmosphere/wind-north-fps"] = -8.4
+        self.fdm["atmosphere/wind-east-fps"] = 0.0
 
         self.fdm["ic/u-fps"] = 35.0
         self.fdm["ic/w-fps"] = 15.0
@@ -101,48 +109,67 @@ class ParachuteEnv(gym.Env):
                                    self.target_lat, self.target_lon)
         self.flight_time = 0
         self.total_reward = 0.0
-
-        # Armazena temporariamente os dados deste voo para decidir se salvará no Top 10 depois
         self.current_flight_telemetry = []
 
         return self._get_obs(), {}
 
     def _get_obs(self):
-        """Coleta e normaliza os dados para a rede neural."""
-        lat = self.fdm["position/lat-gc-deg"]
-        lon = self.fdm["position/long-gc-deg"]
-        heading = self.fdm["attitude/psi-deg"]
-        dist = haversine(lat, lon, self.target_lat, self.target_lon)
-        target_bearing = self._get_bearing(lat, lon, self.target_lat, self.target_lon)
-        bearing_error = (target_bearing - heading + 180) % 360 - 180
+        """Coleta e normaliza os dados com proteção contra NaN."""
+        try:
+            lat = self.fdm["position/lat-gc-deg"]
+            lon = self.fdm["position/long-gc-deg"]
+            heading = self.fdm["attitude/psi-deg"]
+            alt = self.fdm["position/h-sl-ft"]
 
-        return np.array([
-            np.clip(dist / 5500.0, 0, 1),
-            bearing_error / 180.0,
-            self.fdm["velocities/vg-fps"] / 60.0,
-            self.fdm["velocities/h-dot-fps"] / 30.0,
-            self.fdm["attitude/roll-rad"],
-            self.fdm["attitude/pitch-rad"]
-        ], dtype=np.float32)
+            dist = haversine(lat, lon, self.target_lat, self.target_lon)
+            target_bearing = self._get_bearing(lat, lon, self.target_lat, self.target_lon)
+            bearing_error = (target_bearing - heading + 180) % 360 - 180
+
+            # Normalização com clip para evitar explosão de gradiente
+            obs = np.array([
+                np.clip(dist / 5500.0, 0, 1),
+                bearing_error / 180.0,
+                np.clip(self.fdm["velocities/vg-fps"] / 60.0, -1, 2),
+                np.clip(self.fdm["velocities/h-dot-fps"] / 30.0, -2, 2),
+                np.clip(self.fdm["attitude/roll-rad"], -1, 1),
+                np.clip(self.fdm["attitude/pitch-rad"], -1, 1)
+            ], dtype=np.float32)
+
+            if np.isnan(obs).any():
+                return np.zeros(6, dtype=np.float32)
+            return obs
+        except:
+            return np.zeros(6, dtype=np.float32)
 
     def step(self, action):
-        """Executa um passo de tempo (1 segundo) baseado na ação da IA."""
+        """Executa um passo de tempo com blindagem contra erros físicos."""
+        # Clipagem das ações para evitar valores inválidos
+        action = np.clip(action, self.action_space.low, self.action_space.high)
+
         self.fdm["fcs/aileron-cmd-norm"] = float(action[0])
         self.fdm["fcs/elevator-cmd-norm"] = float(action[1])
 
+        # Execução da física com verificação de sucesso
+        success = True
         for _ in range(120):
-            if not self.fdm.run(): break
+            if not self.fdm.run():
+                success = False
+                break
+
+        alt = self.fdm["position/h-sl-ft"]
+
+        # Se a física explodir (NaN ou falha no run), encerra o episódio com penalidade
+        if not success or np.isnan(alt):
+            return np.zeros(6, dtype=np.float32), -100.0, True, False, {}
 
         self.flight_time += 1
         obs = self._get_obs()
         dist = obs[0] * 5500.0
 
         lat, lon = self.fdm["position/lat-gc-deg"], self.fdm["position/long-gc-deg"]
-        alt = self.fdm["position/h-sl-ft"]
         vs = self.fdm["velocities/h-dot-fps"]
         heading = self.fdm["attitude/psi-deg"]
 
-        # Armazena a telemetria deste segundo de voo
         self.current_flight_telemetry.append([
             self.flight_time, lat, lon, alt, heading, vs, dist, action[0], action[1]
         ])
@@ -152,10 +179,20 @@ class ParachuteEnv(gym.Env):
         if abs(obs[1]) < 0.1: reward += 2.0
         reward -= 0.1
 
+        # Condição de término com limite de tempo (1500 segundos)
+        done = bool(alt <= 10 or dist > 10000 or np.isnan(alt) or self.flight_time > 1500)
+
+        # Lógica de Flare (Pouso Suave)
+        if done and alt <= 15:
+            if dist < 50:
+                landing_softness = vs
+                if landing_softness < -5.0:
+                    reward -= abs(landing_softness) * 10.0
+                else:
+                    reward += 500.0
+
         self.total_reward += float(reward)
         self.last_dist = dist
-
-        done = bool(alt <= 10 or dist > 10000 or np.isnan(alt))
 
         if done:
             self._save_logs(dist, lat, lon)
@@ -163,12 +200,10 @@ class ParachuteEnv(gym.Env):
         return obs, reward, done, False, {}
 
     def _save_logs(self, dist, lat, lon):
-        """Salva o log geral e decide se este voo merece ser salvo no Top 10."""
-        # Salva no arquivo de log geral que mostra todos os episódios
+        """Salva o log geral e o Top 10."""
         with open(self.log_file, "a", newline="") as f:
             csv.writer(f).writerow([self.episode, self.flight_time, dist, self.total_reward, lat, lon])
 
-        # --- LÓGICA DE RANKING (TOP 10 MELHORES VOOS) ---
         if len(self.top_flights) < self.max_top_flights or dist < self.top_flights[-1][0]:
             self.top_flights.append((dist, self.episode, self.current_flight_telemetry))
             self.top_flights.sort(key=lambda x: x[0])
