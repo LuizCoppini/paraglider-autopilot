@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="27b10699-8c2b-434f-9cf1-de44d9f6410c" name="Changes" comment="Implemented to save the training models in the models folder with unique names">
+    <list default="true" id="27b10699-8c2b-434f-9cf1-de44d9f6410c" name="Changes" comment="Implemented wind component and random start from parachute jumping">
       <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/rl/parachute_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/rl/parachute_env.py" afterDir="false" />
@@ -115,7 +115,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774466615268</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Implemented wind component and random start from parachute jumping">
+      <option name="closed" value="true" />
+      <created>1774636700288</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1774636700288</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="UnknownFeatures">
@@ -128,6 +136,7 @@
     <MESSAGE value="Create the firs enviroment for the rl training an generate the fisrts models" />
     <MESSAGE value="Implemented to save logs file od the 10 bests flight results from the training in the flight_records folder." />
     <MESSAGE value="Implemented to save the training models in the models folder with unique names" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented to save the training models in the models folder with unique names" />
+    <MESSAGE value="Implemented wind component and random start from parachute jumping" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented wind component and random start from parachute jumping" />
   </component>
 </project>

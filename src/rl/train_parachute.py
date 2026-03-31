@@ -5,71 +5,66 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from datetime import datetime
 from parachute_env import ParachuteEnv
 
-# Coordenadas do Alvo
 TARGET_LAT = -26.2385
 TARGET_LON = -48.884
 
 
 def main():
-    # --- LÓGICA DE ORGANIZAÇÃO DE PASTAS ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_models_path = r"D:\workspace\Pycharm\paraglider-autopilot\models"
-    # Pasta específica desta sessão: models/training_20260325_140000
     session_dir = os.path.join(base_models_path, f"training_{timestamp}")
-
-    # Criar a pasta da sessão e a subpasta de checkpoints
     checkpoint_dir = os.path.join(session_dir, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # 1. Criação do Ambiente
+    # 1. Ambiente
+    # Importante: Não use semente fixa aqui para permitir que as direções de vento
+    # variem conforme o episódio no ambiente.
     raw_env = ParachuteEnv(TARGET_LAT, TARGET_LON)
     env = DummyVecEnv([lambda: raw_env])
-    env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)
 
-    # 2. Configuração de Checkpoints
+    # Ajuste: norm_reward=False ajuda a IA a valorizar o bônus de pouso suave de 1000 pts
+    env = VecNormalize(env, norm_obs=True, norm_reward=False, clip_obs=10.)
+
+    # 2. Checkpoints
     checkpoint_callback = CheckpointCallback(
-        save_freq=50000,
+        save_freq=100000,  # Aumentei para salvar a cada ~150 voos
         save_path=checkpoint_dir,
         name_prefix='parachute_model'
     )
 
-    # 3. Definição do Modelo PPO
+    # 3. Modelo PPO Ajustado para as Novas Regras
     model = sb3.PPO(
-        "MlpPolicy",  # Rede neural padrão (camadas densas para vetores de dados)
-        env,  # O ambiente ParachuteEnv
-        verbose=1,  # Nível de log (1 mostra as estatísticas básicas no console)
-        learning_rate=3e-4,  # Quão rápido a rede neural tenta aprender (0.0003)
-        n_steps=2048,  # Tamanho da "memória" de curto prazo antes de atualizar
-        batch_size=64,  # Quantos dados ele processa por vez dentro da atualização
-        n_epochs=10,  # Quantas vezes ele revisita os mesmos dados em um treino
-        ent_coef=0.05,  # Incentiva a exploração (IA tenta manobras novas)
-        gamma=0.99,  # Dá importância a recompensas futuras (visão de longo prazo)
-        gae_lambda=0.95,  # Suaviza a estimativa de vantagem (estabilidade matemática)
-        clip_range=0.2,  # Limita mudanças bruscas na política (evita colapsos de treino)
-        tensorboard_log="./tensorboard/"  # Pasta para visualizar gráficos de performance
+        "MlpPolicy",
+        env,
+        verbose=1,
+        learning_rate=3e-4,
+        n_steps=4096,  # Maior janela de observação para trajetórias longas
+        batch_size=128,  # Maior estabilidade no gradiente
+        n_epochs=10,
+        ent_coef=0.01,  # Exploração moderada (foco em refinamento)
+        gamma=0.995,  # Maior foco em recompensas de longo prazo (o pouso final)
+        gae_lambda=0.95,
+        clip_range=0.2,
+        tensorboard_log="./tensorboard/"
     )
 
-    print(f"--- Iniciando Treinamento (Pasta: {session_dir}) ---")
+    print(f"--- Iniciando Treino Reprodutível (8 Pontos / 4 Ventos) ---")
 
-    # 4. Execução do Treino
     try:
+        # 4. Total de passos para cobrir os 4000 saltos planejados
         model.learn(
-            total_timesteps=2000000,
+            total_timesteps=2500000,
             callback=checkpoint_callback,
             progress_bar=True
         )
     except KeyboardInterrupt:
-        print("\nTreino interrompido manualmente. Salvando estado atual...")
+        print("\nInterrompido. Salvando...")
 
-    # 5. Salvamento Final (Tudo centralizado na session_dir)
-    model_final_path = os.path.join(session_dir, "parachute_model_final_1M")
-    model.save(model_final_path)
+    # 5. Salvamento Final
+    model.save(os.path.join(session_dir, "parachute_model_final_4000_jumps"))
+    env.save(os.path.join(session_dir, "vec_normalize.pkl"))
 
-    # Salva as estatísticas de normalização no mesmo local
-    stats_path = os.path.join(session_dir, "vec_normalize.pkl")
-    env.save(stats_path)
-
-    print(f"Treino concluído! Arquivos salvos em: {session_dir}")
+    print(f"Treino concluído! Salvo em: {session_dir}")
     env.close()
 
 

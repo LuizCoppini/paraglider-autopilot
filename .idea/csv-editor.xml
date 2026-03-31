@@ -3,6 +3,20 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\src\flight_records\data_records_training_20260325_154929\flight_record_1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\data_records_training_20260325_154929\flight_record_9.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\src\flight_records\data_records_training_20260326_231843\flight_log.csv">
           <value>
             <Attribute>
@@ -32,6 +46,62 @@
           </value>
         </entry>
         <entry key="\src\flight_records\data_records_training_20260326_231843\flight_record_2414.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_211134\flight_log.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\flight_log.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\posicao_0\flight_ep_100.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\posicao_0\flight_ep_350.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\posicao_0\flight_ep_50.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\posicao_0\flight_ep_500.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\posicao_2\flight_ep_1050.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\training_20260327_212226\posicao_2\flight_ep_1500.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
