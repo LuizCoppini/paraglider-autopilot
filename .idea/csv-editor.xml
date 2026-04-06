@@ -3,6 +3,13 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\src\flight_records\data_records_training_20260324_131713\flight_record_30.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\src\flight_records\data_records_training_20260325_154929\flight_record_1.csv">
           <value>
             <Attribute>
@@ -46,6 +53,27 @@
           </value>
         </entry>
         <entry key="\src\flight_records\data_records_training_20260326_231843\flight_record_2414.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\flight_records_fgfs_143611.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\flight_records_fgfs_144358.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\flight_records\flight_records_fgfs_151040.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
