@@ -9,9 +9,13 @@ from simulator.launcher import FlightGearLauncher
 from simulator.fdm_reader import start_reader
 from simulator.jsbsim_runner import run_simulation
 
-# 1: FlightGear | 2: JSBSim | 3: Treinamento Poetry | 4: validação do modelo no flightgear
-modo = 4
-3
+# 1: FlightGear (Manual)
+# 2: JSBSim (Pure Physics)
+# 3: Treinamento Clássico (Distância)
+# 4: Validação Automática no FlightGear (PPO)
+# 5: Treinamento Novo (Lógica de Cone de Descida)
+modo = 5
+
 
 def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -29,45 +33,52 @@ def main():
         run_simulation()
 
     elif modo == 3:
+        # Treinamento original baseado em distância simples
         script_path = os.path.join(current_dir, "rl", "train_parachute.py")
-
-        print(f"Iniciando treinamento via Poetry...")
-        print(f"Caminho detectado: {script_path}")
-
-        try:
-            project_root = os.path.dirname(current_dir)
-            # shell=True ajuda o Windows a encontrar o executável do poetry no PATH
-            subprocess.run(["poetry", "run", "python", script_path], check=True, cwd=project_root)
-
-        except subprocess.CalledProcessError as e:
-            print(f"Erro ao executar o treinamento: {e}")
-        except FileNotFoundError:
-            print("Erro: Comando 'poetry' não encontrado.")
+        run_poetry_train(script_path, current_dir)
 
     elif modo == 4:
         print("--- INICIANDO VALIDAÇÃO AUTOMÁTICA NO FLIGHTGEAR ---")
 
-        # 1. Configurações de Origem (Igual ao Treino - Posição 0)
+        # Posição de teste (1500m ao Norte para compensar arrasto do FGFS)
         target_lat, target_lon = -26.2385, -48.884
         radius = 1500.0
-        angle_pos = math.radians(0)  # Posição Norte
+        angle_pos = math.radians(0)
+
         start_lat = target_lat + (radius * math.cos(angle_pos)) / 111320.0
         start_lon = target_lon + (radius * math.sin(angle_pos)) / (111320.0 * math.cos(math.radians(target_lat)))
-        start_alt = 9850  # Pés (Altitude do Treino)
+        start_alt = 9850
 
-        # 2. Abrir FlightGear
         fg = FlightGearLauncher()
         fg.start(lat=start_lat, lon=start_lon, alt=start_alt)
 
         print("Aguardando carregamento do simulador (20s)...")
         time.sleep(20)
 
-        # 3. Iniciar Controle
         print("Iniciando controle PPO...")
         run_validation()
 
+    elif modo == 5:
+        # NOVO: Treinamento focado no Cone de Descida e Glide Ratio
+        script_path = os.path.join(current_dir, "rl", "train_parachute_cone.py")
+        print("--- INICIANDO TREINAMENTO COM LÓGICA DE CONE ---")
+        run_poetry_train(script_path, current_dir)
+
     else:
-        print("Modo inválido. Escolha 1, 2 ou 3.")
+        print("Modo inválido. Escolha entre 1, 2, 3, 4 ou 5.")
+
+
+def run_poetry_train(script_path, current_dir):
+    """Função auxiliar para executar scripts via Poetry"""
+    print(f"Iniciando treinamento via Poetry...")
+    print(f"Caminho detectado: {script_path}")
+    try:
+        project_root = os.path.dirname(current_dir)
+        subprocess.run(["poetry", "run", "python", script_path], check=True, cwd=project_root)
+    except subprocess.CalledProcessError as e:
+        print(f"Erro ao executar o treinamento: {e}")
+    except FileNotFoundError:
+        print("Erro: Comando 'poetry' não encontrado.")
 
 
 if __name__ == "__main__":
