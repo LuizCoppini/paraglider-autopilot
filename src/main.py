@@ -14,7 +14,7 @@ from simulator.jsbsim_runner import run_simulation
 # 3: Treinamento Clássico (Distância)
 # 4: Validação Automática no FlightGear (PPO)
 # 5: Treinamento Novo (Lógica de Cone de Descida)
-modo = 5
+modo = 4
 
 
 def main():
@@ -37,24 +37,25 @@ def main():
         script_path = os.path.join(current_dir, "rl", "train_parachute.py")
         run_poetry_train(script_path, current_dir)
 
+
     elif modo == 4:
         print("--- INICIANDO VALIDAÇÃO AUTOMÁTICA NO FLIGHTGEAR ---")
-
-        # Posição de teste (1500m ao Norte para compensar arrasto do FGFS)
-        target_lat, target_lon = -26.2385, -48.884
+        # ATUALIZADO PARA MOJAVE (EDWARDS AFB)
+        target_lat, target_lon = 34.9055, -117.8830
         radius = 1500.0
         angle_pos = math.radians(0)
 
+        # O cálculo abaixo usará as coordenadas de Mojave para o início do voo
         start_lat = target_lat + (radius * math.cos(angle_pos)) / 111320.0
         start_lon = target_lon + (radius * math.sin(angle_pos)) / (111320.0 * math.cos(math.radians(target_lat)))
         start_alt = 9850
-
         fg = FlightGearLauncher()
+
+        # O launcher agora enviará Mojave para o FlightGear na partida
         fg.start(lat=start_lat, lon=start_lon, alt=start_alt)
 
         print("Aguardando carregamento do simulador (20s)...")
         time.sleep(20)
-
         print("Iniciando controle PPO...")
         run_validation()
 
