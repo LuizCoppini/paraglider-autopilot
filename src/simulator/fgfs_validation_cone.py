@@ -1,11 +1,20 @@
 """
-fgfs_validation.py — Validação do MODELO ANTIGO (distância simples).
+fgfs_validation_cone.py — Validação do MODELO CONE no FlightGear.
 
-Este arquivo é para o modelo treinado com parachute_env.py (recompensa
-baseada apenas na distância ao alvo). A observação é simples: dist/5500
-normalizada. Sem VecNormalize, sem cone_err, sem AGL.
+Este arquivo é específico para o modelo treinado com o
+parachute_cone_env.py (cone de descida + glide_ratio 0.8). Ele aplica:
 
-Para o modelo cone, use fgfs_validation_cone.py.
+  - Observação no formato cone: obs[0] = (dist - alt_AGL*0.8)/1000
+    (alt em AGL para alinhar com o treino, que foi a nível do mar).
+  - Normalização da obs via VecNormalize (vec_normalize_cone.pkl).
+  - Rate-limit de 0.2/step no aileron, igual ao step() do treino.
+  - Escrita direta em /fdm/jsbsim/fcs/aileron-cmd-norm e
+    /fdm/jsbsim/fcs/elevator-cmd-norm (Parachutist não mapeia
+    /controls/flight/* para o FCS).
+  - Raio de spawn 4000 m (igual ao treino).
+
+Para validar o modelo antigo (distância simples), use o
+fgfs_validation.py.
 
 Arquitetura:
   flightgear_python.FDMConnection roda o callback num processo FILHO
@@ -30,14 +39,22 @@ from flightgear_python.fg_if import FDMConnection
 from stable_baselines3 import PPO
 
 # --- CONFIGURAÇÕES ---
-MODEL_PATH = r"D:\workspace\Pycharm\paraglider-autopilot\models\training_20260327_212226\parachute_model_final_4000_jumps.zip"
+MODEL_PATH = r"D:\workspace\Pycharm\paraglider-autopilot\models\cone_method\training_20260406_200222\parachute_cone_model_final.zip"
+VEC_NORMALIZE_PATH = r"D:\workspace\Pycharm\paraglider-autopilot\models\cone_method\training_20260406_200222\vec_normalize_cone.pkl"
 BASE_LOG_FOLDER = Path(r"D:\workspace\Pycharm\paraglider-autopilot\src\flight_records")
 
 # Mojave / Edwards AFB
 TARGET_LAT, TARGET_LON = 34.9055, -117.8830
 START_ALT_FT = 9850
-RADIUS_M = 1500
+RADIUS_M = 4000   # Mesmo raio do treino do cone (parachute_cone_env.reset)
 MOJAVE_GROUND_ALT = 2300  # ft MSL aprox.
+MOJAVE_GROUND_ALT_M = MOJAVE_GROUND_ALT * 0.3048  # ~700.8 m
+
+# Treino do cone foi a nível do mar (target lat=-26.2385, lon=-48.884 — litoral
+# brasileiro). Lá, h-sl-ft no pouso ≈ 0, então o cone fecha em zero. Em Mojave o
+# solo está a 2300 ft — sem subtrair, o cone "termina" em raio 561 m e o modelo
+# nunca consegue convergir. Usamos AGL na obs para alinhar com o que ele aprendeu.
+USE_AGL_FOR_CONE = True
 
 MAX_FLIGHT_TIME = 1500
 MAX_FLIGHTS = 60
@@ -48,17 +65,24 @@ RESET_STABILIZATION_S = 12.0
 # Tempo de espera após relançar o FlightGear (boot completo).
 HARD_RESET_WAIT_S = 25.0
 
+# --- VENTO (igual ao treino: parachute_cone_env.reset linhas 79-85) ---
+# O modelo cone foi treinado com vento de 4 níveis × 360° em direção. Em FG sem
+# vento o modelo "compensa vento fantasma". Reproduzimos as mesmas condições.
+WIND_SPEEDS_FPS = [4.0, 12.0, 25.0, 40.0]
+
 # --- ESTADO (global do processo FILHO; recriado lá) ---
 csv_writer = None
 csv_file_handle = None
 telnet_socket = None
 model = None
+norm_env = None  # VecNormalize wrapper para normalizar a obs (igual ao treino)
 last_control_time = 0.0
 chute_deployed = False
 start_time = None
 current_actions = [0.0, 0.0]
 flight_number = 1
 current_session_folder = None
+wind_set_for_this_flight = False  # injeta vento uma vez por voo
 
 # Máquina de estados
 PHASE_FLYING = "FLYING"
@@ -199,6 +223,42 @@ def _bearing_deg(lat1, lon1, lat2, lon2):
     return (math.degrees(math.atan2(y, x)) + 360.0) % 360.0
 
 
+def set_random_wind():
+    """
+    Injeta vento aleatório, replicando o cenário do treino. Sorteia
+    velocidade entre WIND_SPEEDS_FPS e direção em [0, 360).
+
+    No treino (JSBSim puro Python) bastava setar atmosphere/wind-*-fps.
+    No FG essa property é INPUT do JSBSim que é sobrescrita a cada frame
+    a partir de /environment/wind-from-*-fps. Por isso setamos AMBAS.
+
+    Convenção de sinais:
+      - JSBSim: atmosphere/wind-north-fps  → +N = vento blowing TOWARD N
+      - FG:     environment/wind-from-north-fps → +N = wind FROM N (TOWARD S)
+      Estas duas têm sinal OPOSTO! Se quisermos "wind blowing toward north",
+      JSBSim recebe +N e FG recebe -N (vento vindo do sul).
+    """
+    speed = random.choice(WIND_SPEEDS_FPS)
+    direction = random.uniform(0.0, 360.0)
+    rad = math.radians(direction)
+    wind_n = -math.cos(rad) * speed   # JSBSim convention (treino)
+    wind_e = -math.sin(rad) * speed
+    # Property no JSBSim
+    send_telnet_cmd(f"set /fdm/jsbsim/atmosphere/wind-north-fps {wind_n}")
+    send_telnet_cmd(f"set /fdm/jsbsim/atmosphere/wind-east-fps {wind_e}")
+    # Property no FG-level (fica persistente; o FG empurra para o JSBSim)
+    # Sinal OPOSTO: wind-from-north significa "vento vem do norte (vai pro sul)",
+    # ou seja, o vetor de wind é -N. Para fazer JSBSim wind-north = +N,
+    # precisamos environment/wind-from-north = -N
+    send_telnet_cmd(f"set /environment/wind-from-north-fps {-wind_n}")
+    send_telnet_cmd(f"set /environment/wind-from-east-fps {-wind_e}")
+    # Algumas versões do FG usam 'kt' para wind speed; vamos garantir
+    # que o sistema de presets também não esteja com 0
+    send_telnet_cmd(f"set /environment/config/boundary/entry[0]/wind-speed-kt {speed*0.5925}")
+    print(f"[child] Vento injetado: {speed:.0f} fps de {direction:.0f}° "
+          f"(JSBSim wind: N={wind_n:+.1f}, E={wind_e:+.1f})")
+
+
 def random_spawn_around_target():
     """
     Sorteia um ponto na circunferência de raio RADIUS_M ao redor do alvo.
@@ -295,25 +355,40 @@ def haversine(lat1, lon1, lat2, lon2):
 
 def get_observation(fdm_data):
     """
-    Observação do MODELO ANTIGO (parachute_env._get_obs):
-      [0] dist normalizada (dist/5500, clipada em [0, 1])
+    Observação do MODELO CONE — mesma fórmula de parachute_cone_env._get_obs():
+      [0] cone_err = (dist - altitude_m * 0.8) / 1000, clipado em [-1, 1]
       [1] bearing_err / 180
       [2] v_ground / 60
-      [3] -v_down / 30
+      [3] v_down / 30 (h-dot-fps; positivo p/ cima — no FDM packet,
+                      v_down_ft_per_s é positivo p/ baixo, então invertemos)
       [4] roll (phi_rad)
       [5] pitch (theta_rad)
     """
     lat = math.degrees(fdm_data.lat_rad)
     lon = math.degrees(fdm_data.lon_rad)
+    alt_m_msl = fdm_data.alt_m
+    # AGL para alinhar o cone com o treinamento (que foi a nível do mar)
+    alt_m_for_cone = (
+        max(0.0, alt_m_msl - MOJAVE_GROUND_ALT_M)
+        if USE_AGL_FOR_CONE else alt_m_msl
+    )
     dist = haversine(lat, lon, TARGET_LAT, TARGET_LON)
+    raio_ideal = alt_m_for_cone * 0.8  # mesmo glide_ratio_target do treino
+    cone_err = (dist - raio_ideal) / 1000.0
+
     v_ground = math.sqrt(fdm_data.v_north_ft_per_s ** 2 + fdm_data.v_east_ft_per_s ** 2)
+    # h-dot-fps no JSBSim do treino: positivo p/ cima.
+    # No pacote FDM, v_down_ft_per_s é positivo p/ baixo → invertemos.
+    h_dot = -fdm_data.v_down_ft_per_s
+
     target_hdg = (90.0 - math.degrees(math.atan2(TARGET_LAT - lat, TARGET_LON - lon))) % 360
     bearing_err = (target_hdg - math.degrees(fdm_data.psi_rad) + 180) % 360 - 180
+
     return np.array([
-        np.clip(dist / 5500, 0, 1),
+        np.clip(cone_err, -1, 1),
         bearing_err / 180,
         v_ground / 60,
-        -fdm_data.v_down_ft_per_s / 30,
+        h_dot / 30,
         fdm_data.phi_rad,
         fdm_data.theta_rad,
     ], dtype=np.float32)
@@ -323,9 +398,9 @@ def get_observation(fdm_data):
 # CALLBACK FDM — TUDO acontece aqui, no processo filho. NUNCA bloquear.
 # ----------------------------------------------------------------------
 def fdm_callback(fdm_data, event_pipe):
-    global model, csv_writer, csv_file_handle, current_session_folder
+    global model, norm_env, csv_writer, csv_file_handle, current_session_folder
     global last_control_time, start_time, chute_deployed, current_actions
-    global flight_number, phase, reset_done_at
+    global flight_number, phase, reset_done_at, wind_set_for_this_flight
 
     try:
         now = time.time()
@@ -347,6 +422,7 @@ def fdm_callback(fdm_data, event_pipe):
             chute_deployed = False
             start_time = now
             last_control_time = 0.0
+            wind_set_for_this_flight = False  # vai injetar vento novo
             phase = PHASE_FLYING
             print(f"[child] --- Iniciando voo {flight_number} ---")
             # Cai para o caminho de FLYING abaixo
@@ -356,9 +432,41 @@ def fdm_callback(fdm_data, event_pipe):
             print(f"[child] Carregando PPO: {MODEL_PATH}")
             model = PPO.load(MODEL_PATH)
             print("[child] PPO carregado.")
+            # Carrega o VecNormalize (estatísticas de normalização da obs).
+            # Sem isso a obs vai pro modelo em escala completamente diferente
+            # da que ele viu no treino → comportamento errático.
+            try:
+                from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+                import gymnasium as gym
+                from gymnasium import spaces
+
+                class _Stub(gym.Env):
+                    observation_space = spaces.Box(low=-100, high=100,
+                                                   shape=(6,), dtype=np.float32)
+                    action_space = spaces.Box(low=np.array([-1, 0]),
+                                              high=np.array([1, 1]),
+                                              dtype=np.float32)
+                    def reset(self, seed=None, options=None):
+                        return np.zeros(6, dtype=np.float32), {}
+                    def step(self, a):
+                        return np.zeros(6, dtype=np.float32), 0.0, True, False, {}
+
+                stub = DummyVecEnv([lambda: _Stub()])
+                norm_env = VecNormalize.load(VEC_NORMALIZE_PATH, stub)
+                norm_env.training = False
+                norm_env.norm_reward = False
+                print(f"[child] VecNormalize carregado. obs_mean={norm_env.obs_rms.mean}, obs_var={norm_env.obs_rms.var}")
+            except Exception as e:
+                print(f"[child] AVISO: falha ao carregar VecNormalize ({e}). Obs irá direto sem normalização.")
+                norm_env = None
 
         if start_time is None:
             start_time = now
+
+        # Injeta vento aleatório uma vez por voo, igual ao treino
+        if not wind_set_for_this_flight:
+            set_random_wind()
+            wind_set_for_this_flight = True
 
         # Descarta pacote inválido (FG manda lixo logo após reinit)
         for v in (fdm_data.lat_rad, fdm_data.lon_rad, fdm_data.alt_m,
@@ -416,6 +524,7 @@ def fdm_callback(fdm_data, event_pipe):
             time.sleep(3.0)
             new_lat, new_lon, new_heading = random_spawn_around_target()
             launch_flightgear(new_lat, new_lon, START_ALT_FT, new_heading)
+            wind_set_for_this_flight = False  # FG novo → injeta vento de novo
             phase = PHASE_RESETTING
             reset_done_at = time.time() + HARD_RESET_WAIT_S
             return fdm_data
@@ -427,14 +536,39 @@ def fdm_callback(fdm_data, event_pipe):
             print(f"[child] Voo {flight_number}: paraquedas aberto em t={elapsed:.1f}s.")
 
         # ---- 2. Controle PPO a 1 Hz ----
-        if chute_deployed and (now - last_control_time >= 1.0):
+        # Espera 4 s entre o deploy do chute e o primeiro comando — igual
+        # ao treino, que faz `for _ in range(480): self.fdm.run()` antes
+        # de retornar a primeira obs (480 × 1/120 = 4 s).
+        chute_settled = chute_deployed and (elapsed > 7.0)
+        if chute_settled and (now - last_control_time >= 1.0):
             obs = get_observation(fdm_data)
             if np.all(np.isfinite(obs)):
-                action, _ = model.predict(obs, deterministic=True)
-                current_actions = [float(action[0]), float(action[1])]
+                # Normaliza obs com as estatísticas do treino (VecNormalize).
+                if norm_env is not None:
+                    obs_for_model = norm_env.normalize_obs(obs)
+                else:
+                    obs_for_model = obs
+                action, _ = model.predict(obs_for_model, deterministic=True)
+                a0_raw, a1_raw = float(action[0]), float(action[1])
+
+                # Rate-limit no aileron — IDÊNTICO ao parachute_cone_env.step()
+                # max_rate = 0.2 por step.
+                max_rate = 0.2
+                a0 = max(current_actions[0] - max_rate,
+                         min(current_actions[0] + max_rate, a0_raw))
+                # Action space treino: low=[-1,0], high=[1,1]
+                a0 = max(-1.0, min(1.0, a0))
+                a1 = max(0.0, min(1.0, a1_raw))
+                current_actions = [a0, a1]
+
+                # Escreve DIRETO em fcs/aileron-cmd-norm e
+                # fcs/elevator-cmd-norm — exatamente o que o treino
+                # parachute_cone_env.step() faz (linhas 118-119 do env).
+                # Pular /controls/flight/* evita qualquer scaling /
+                # deadband / rate-limit do XML da aeronave Parachutist.
                 send_telnet_cmd(
-                    f"set /controls/flight/aileron {current_actions[0]}\n"
-                    f"set /controls/flight/elevator {current_actions[1]}"
+                    f"set /fdm/jsbsim/fcs/aileron-cmd-norm {a0}\n"
+                    f"set /fdm/jsbsim/fcs/elevator-cmd-norm {a1}"
                 )
                 last_control_time = now
 
